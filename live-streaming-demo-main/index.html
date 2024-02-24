@@ -98,7 +98,7 @@
         border: none;
         font-size: 16px;
         margin: 0 5px;
-        background-color: #7459fe;
+        background-color: #357624;
         color: #fff;
       }
 
@@ -130,6 +130,8 @@
 
       #video-wrapper div {
         width: 400px;
+        flex: 1; /* Use flexbox to distribute space evenly */
+  max-width: 50%; /* Each div takes up to half of the available width */
         margin: 0 auto;
         padding: 50px 0 0 0;
       }
@@ -143,14 +145,14 @@
   </head>
 
   <body>
-    <!-- adde "id=content" -->
     <div id="content">
       <!-- added "id=video-wrapper" -->
-      <div id="video-wrapper">
         <div>
-          <video id="talk-video" width="400" height="400" autoplay></video>
+          <video id="talk-video" width="300" height="300" autoplay></video>
         </div>
-      </div>
+        <div>
+          <video id="talk-video" width="600" height="600" autoplay></video>
+        </div>
       <br />
 
       <!-- added div#buttons -->

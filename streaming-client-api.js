@@ -175,6 +175,7 @@ destroyButton.onclick = async () => {
 function onIceGatheringStateChange() {
   iceGatheringStatusLabel.innerText = peerConnection.iceGatheringState;
   iceGatheringStatusLabel.className = 'iceGatheringState-' + peerConnection.iceGatheringState;
+  console.log('onIceGatheringStateChange: ', peerConnection.iceGatheringState);
 }
 function onIceCandidate(event) {
   console.log('onIceCandidate', event);
@@ -203,15 +204,18 @@ function onIceConnectionStateChange() {
     stopAllStreams();
     closePC();
   }
+  console.log('onIceConnectionStateChange: ', peerConnection.iceConnectionState);
 }
 function onConnectionStateChange() {
   // not supported in firefox
   peerStatusLabel.innerText = peerConnection.connectionState;
   peerStatusLabel.className = 'peerConnectionState-' + peerConnection.connectionState;
+  console.log('onConnectionStateChange: ', peerConnection.connectionState);
 }
 function onSignalingStateChange() {
   signalingStatusLabel.innerText = peerConnection.signalingState;
   signalingStatusLabel.className = 'signalingState-' + peerConnection.signalingState;
+  console.log('onSignalingStateChange: ', peerConnection.signalingState);
 }
 
 function onVideoStatusChange(videoIsPlaying, stream) {
@@ -226,6 +230,7 @@ function onVideoStatusChange(videoIsPlaying, stream) {
   }
   streamingStatusLabel.innerText = status;
   streamingStatusLabel.className = 'streamingState-' + status;
+  console.log('onVideoStatusChange: ', status);
 }
 
 function onTrack(event) {
