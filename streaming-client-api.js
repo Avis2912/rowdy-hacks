@@ -127,12 +127,32 @@ talkButton.onclick = async () => {
     
     // const userInput = document.getElementById('user-input-field').value;
 
-
+    //adding to firebase
+   
+    //////////////////////////////////////////////////////////
+    
+    try {
+      
     const recordedVoiceCommand = await recordVoiceCommand();
     console.log("YOOOO:", recordedVoiceCommand);
 
     const responseFromOpenAI = await fetchOpenAIResponse(recordedVoiceCommand);
     console.log("OpenAI Response:", responseFromOpenAI);
+      
+       const docRef = firebase.firestore().collection('conversations').doc('conversations');
+    // Create new objects for the 'ai' and 'user'
+    const newAiEntry = { ai: userInput };
+    const newUserEntry = { user: responseFromOpenAI };
+
+    // Update 'texts' array in the document by adding new 'ai' and 'user' maps
+    docRef.update({
+      texts: firebase.firestore.FieldValue.arrayUnion(newAiEntry, newUserEntry)
+    }).then(() => {
+      console.log("Document successfully updated!");
+    }).catch(error => {
+      console.error("Error updating document: ", error);
+    });
+
     //
     const talkResponse = await fetch(`${DID_API.url}/talks/streams/${streamId}`, {
       method: 'POST',

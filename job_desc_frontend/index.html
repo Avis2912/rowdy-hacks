@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Description Analyzer</title>
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Include PDF.js library -->
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
+    <script>
+        // Set the path for the pdf.worker.js script
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.worker.min.js';
+    </script>
+
+    <!-- Include Firebase library -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+
+</head>
+<body>
+    <div class="container">
+        <div class="inputs-container">
+            <input type="text" id="company" placeholder="Enter Company" class="text-input">
+            <input type="text" id="position" placeholder="Enter Position" class="role-text-input">
+        </div>
+        <div class="upload-container">
+            <input type="file" id="pdfUpload" accept=".pdf" hidden>
+            <label for="pdfUpload" class="upload-box">Upload PDF</label>
+        </div>
+        <div class="button-container">
+            <button id="submit" class="action-btn">Submit</button>
+            <button id="generate" class="action-btn">Generate</button>
+        </div>
+    </div>
+
+    <script src="send-to-fire.js"></script>
+</body>
+</html>

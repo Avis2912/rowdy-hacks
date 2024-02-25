@@ -1,0 +1,95 @@
+body, html {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #f5f5f5;
+}
+
+.container {
+    width: 80%;
+    max-width: 600px;
+    margin: auto;
+    padding: 40px;
+    background-color: white;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.inputs-container {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 20px; /* Space between inputs and upload box */
+}
+
+.text-input, .role-text-input {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-sizing: border-box;
+}
+
+.upload-container {
+    text-align: center;
+    margin-bottom: 20px; /* Space between upload box and buttons */
+}
+
+.upload-box {
+    display: block; /* Full-width block */
+    width: calc(100% - 20px); /* Full width minus padding */
+    padding: 20px;
+    border: 2px dashed #ccc;
+    border-radius: 5px;
+    cursor: pointer;
+    background-color: #fafafa;
+    text-align: center;
+}
+
+.button-container {
+    display: flex;
+    justify-content: flex-end; /* Align buttons to the right */
+    gap: 10px;
+}
+
+.action-btn {
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    white-space: nowrap;
+}
+
+.action-btn:hover {
+    background-color: #0056b3;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+    .inputs-container,
+    .upload-box,
+    .button-container {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .action-btn {
+        width: auto; /* Allow buttons to grow with the container */
+        margin-top: 10px; /* Space between buttons */
+    }
+
+    .upload-box {
+        width: 100%; /* Full width for mobile */
+        box-sizing: border-box; /* Adjust box-sizing for padding */
+    }
+}
