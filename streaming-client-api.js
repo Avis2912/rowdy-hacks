@@ -2,23 +2,11 @@
 //CMD C:\Projects\DID\streams_Oct>node app.js on http://localhost:3000/
 
 'use strict';
+// import { record } from 'node-record-lpcm16';
 import DID_API from './api.json' assert { type: 'json' };
+// import 'firebase/storage'; 
 
 if (DID_API.key == '🤫') alert('Please put your API key inside ./api.json and restart.');
-
-// const dotenv = require('dotenv');
-// const axios = require('axios');
-// const fs = require('fs');
-// const path = require('path');
-// const FormData = require('form-data');
-
-// import axios from 'axios';
-// import FormData from 'form-data';
-// import fetch from 'node-fetch';
-// import fs from 'fs';
-// import { createReadStream } from 'fs';
-// import { join } from 'path';
-
 
 
 // Load the OpenAI API from file new 10/23 
@@ -32,8 +20,97 @@ fetch('./config.json')
     console.error('Error loading config.json:', error);
   });
 
+  let messageHistory = []; // Array to store previous messages
+  let context = []; // Array to store previous messages
+  let isFirstOpenAIRequest = true; 
+
+  const captureUserVideo = () => {
+    // Create a canvas element
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+  
+    // Draw the user's video onto the canvas
+    context.drawImage(talkVideo, 0, 0, canvas.width, canvas.height);
+  
+    return canvas;
+  };
+
+  function canvasDataURLToBuffer(dataURL) {
+    // Extract the base64 data from the data URL
+    const base64Data = dataURL.replace(/^data:image\/\w+;base64,/, '');
+    
+    // Decode the base64 data to a Buffer
+    const buffer = Buffer.from(base64Data, 'base64');
+    
+    return buffer;
+  }
+  
+  const uploadImageToGCP = async (canvas) => {
+    // Convert the canvas to a data URL
+    const imageDataURL = await canvas.toDataURL();
+  
+    const bucketName = 'rowdy-hacks';
+    const bucket = storage.bucket(bucketName);
+    const imageName = 'user_video_image.jpg';
+    const imageFile = bucket.file(imageName);
+
+    const imageDataBuffer = await canvasDataURLToBuffer(imageDataURL);
+
+    // Upload the image to Cloud Storage
+    imageFile.save(imageDataBuffer, { contentType: 'image/jpeg' }, (err) => {
+      if (err) {
+        console.error('Error uploading image to Google Cloud Storage:', err);
+      } else {
+        console.log('Image uploaded to Google Cloud Storage');
+      }
+    });
+
+  };
+  
 // OpenAI API endpoint set up new 10/23 
 async function fetchOpenAIResponse(userMessage) {
+
+  if (isFirstOpenAIRequest) {
+    isFirstOpenAIRequest = false; // Update the flag
+    const userVideoCanvas = captureUserVideo(); // Function to capture the user's video
+    uploadImageToGCP(userVideoCanvas); // Function to upload the captured image to Firebase Storage
+  }
+
+
+  let userDetails = {}
+
+  let docRef1 = firebase.firestore().collection('conversations').doc('details');
+    await docRef1.get().then((doc) => {
+    if (doc.exists) {
+        // Document data exists, retrieve the fields
+        const data = doc.data();
+        const company = data.company;
+        const jobTitle = data.jobTitle;
+        const jobDescription = data.jobDescription;
+  
+        // Construct a JSON object with the retrieved data
+        const jsonObject = {
+            company: company,
+            jobTitle: jobTitle,
+            jobDescription: jobDescription
+        };
+
+        userDetails = jsonObject;
+  
+        // Log the JSON object
+        console.log("JSON object:", jsonObject);
+    } else {
+        // Document doesn't exist
+        console.log("No such document!");
+    }
+  }).catch((error) => {
+    console.error("Error getting document:", error);
+  });
+
+  console.log("PLUH object:", userDetails);
+
+
+
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -42,11 +119,27 @@ async function fetchOpenAIResponse(userMessage) {
     },
     body: JSON.stringify({
       model: "gpt-3.5-turbo",
-      messages: [{role: "user", content: userMessage}],
-      temperature: 0.7,
+      messages: [
+        { "role": "system", "content": `You're Chris, my AI interviewer 
+          for a software engineering role at ${userDetails.company}.
+
+          First inform me you're interviewing for the company and ask me more about my
+          experience at Capital One.
+
+          THEN Ask me the following questions in order, ONLY one at a time.
+
+          How do you code a linked tree?
+
+          Then end by saying thank you for taking this short miniature interview.` 
+        },
+        ...messageHistory,
+        { "role": "user", "content": userMessage }
+      ],      
+      temperature: 0.5,
       max_tokens: 25
     }),
   });
+
   
   if (!response.ok) {
     throw new Error(`OpenAI API request failed with status ${response.status}`);
@@ -125,23 +218,34 @@ const talkButton = document.getElementById('talk-button');
 talkButton.onclick = async () => {
   if (peerConnection?.signalingState === 'stable' || peerConnection?.iceConnectionState === 'connected') {
     
-    // const userInput = document.getElementById('user-input-field').value;
-
-    //adding to firebase
-   
+    // const userInput = document.getElementById('user-input-field').value;   
     //////////////////////////////////////////////////////////
     
     try {
       
     const recordedVoiceCommand = await recordVoiceCommand();
-    console.log("YOOOO:", recordedVoiceCommand);
+    console.log("RECORDED:", recordedVoiceCommand);
+
 
     const responseFromOpenAI = await fetchOpenAIResponse(recordedVoiceCommand);
     console.log("OpenAI Response:", responseFromOpenAI);
+
+    // Check if recordedVoiceCommand and responseFromOpenAI are not empty before pushing to messageHistory
+    if (recordedVoiceCommand.trim) {
+      messageHistory.push({ "role": "user", "content": recordedVoiceCommand });
+    }
+    if (responseFromOpenAI.trim) {
+      messageHistory.push({ "role": "assistant", "content" : responseFromOpenAI });
+    }
+
+    console.log("Message History:", messageHistory);
+
+    
+  
       
-       const docRef = firebase.firestore().collection('conversations').doc('conversations');
+    const docRef = firebase.firestore().collection('conversations').doc('conversations');
     // Create new objects for the 'ai' and 'user'
-    const newAiEntry = { ai: userInput };
+    const newAiEntry = { ai: recordedVoiceCommand };
     const newUserEntry = { user: responseFromOpenAI };
 
     // Update 'texts' array in the document by adding new 'ai' and 'user' maps
@@ -153,7 +257,7 @@ talkButton.onclick = async () => {
       console.error("Error updating document: ", error);
     });
 
-    //
+    
     const talkResponse = await fetch(`${DID_API.url}/talks/streams/${streamId}`, {
       method: 'POST',
       headers: { 
@@ -192,10 +296,14 @@ talkButton.onclick = async () => {
       })
     });
   }
-};
+  catch (error) { 
+    console.error('Error talking:', error);
+  }}};
 
 
 const recordVoiceCommand = () => {
+  talkButton.innerText = 'Listening...';
+  talkButton.classList.add('activeBtn');
   return new Promise(async (resolve, reject) => {
     try {
       // Request access to the user's microphone
@@ -220,7 +328,7 @@ const recordVoiceCommand = () => {
         // Transcribe the recorded audio
         try {
           const transcriptionResult = await transcribeAudio(audioBlob);
-          console.log("Transcription result:", transcriptionResult.text);
+          // console.log("Transcription result:", transcriptionResult.text);
           resolve(transcriptionResult.text); // Resolve the promise with the transcription result
         } catch (error) {
           console.error("Error transcribing audio:", error);
@@ -234,6 +342,8 @@ const recordVoiceCommand = () => {
       // Set a timeout to stop recording after a certain duration (in milliseconds)
       setTimeout(() => {
         recorder.stop();
+        talkButton.classList.remove('activeBtn');
+        talkButton.innerText = 'Speak 🎙️';
       }, 5000); 
 
     } catch (error) {
