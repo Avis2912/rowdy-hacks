@@ -6,6 +6,21 @@ import DID_API from './api.json' assert { type: 'json' };
 
 if (DID_API.key == '🤫') alert('Please put your API key inside ./api.json and restart.');
 
+// const dotenv = require('dotenv');
+// const axios = require('axios');
+// const fs = require('fs');
+// const path = require('path');
+// const FormData = require('form-data');
+
+// import axios from 'axios';
+// import FormData from 'form-data';
+// import fetch from 'node-fetch';
+// import fs from 'fs';
+// import { createReadStream } from 'fs';
+// import { join } from 'path';
+
+
+
 // Load the OpenAI API from file new 10/23 
 let OPENAI_API_KEY;
 fetch('./config.json')
@@ -111,15 +126,12 @@ talkButton.onclick = async () => {
   if (peerConnection?.signalingState === 'stable' || peerConnection?.iceConnectionState === 'connected') {
     
     // const userInput = document.getElementById('user-input-field').value;
-    try {
 
-      const recordedVoiceCommand = await recordVoiceCommand();
-      const responseFromOpenAI = await fetchOpenAIResponse(recordedVoiceCommand);
 
-    } catch (error) {
-      console.error('Error recording voice command:', error);
-    }
+    const recordedVoiceCommand = await recordVoiceCommand();
+    console.log("YOOOO:", recordedVoiceCommand);
 
+    const responseFromOpenAI = await fetchOpenAIResponse(recordedVoiceCommand);
     console.log("OpenAI Response:", responseFromOpenAI);
     //
     const talkResponse = await fetch(`${DID_API.url}/talks/streams/${streamId}`, {
@@ -161,6 +173,84 @@ talkButton.onclick = async () => {
     });
   }
 };
+
+
+const recordVoiceCommand = () => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      // Request access to the user's microphone
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      // Create a new MediaRecorder instance and pass in the audio stream
+      const recorder = new MediaRecorder(stream);
+
+      // Initialize an array to store audio chunks
+      const audioChunks = [];
+
+      // Event listener to handle when data becomes available
+      recorder.ondataavailable = (e) => {
+        audioChunks.push(e.data);
+      };
+
+      // Event listener to handle when recording stops
+      recorder.onstop = async () => {
+        // Combine all audio chunks into a single Blob
+        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+
+        // Transcribe the recorded audio
+        try {
+          const transcriptionResult = await transcribeAudio(audioBlob);
+          console.log("Transcription result:", transcriptionResult.text);
+          resolve(transcriptionResult.text); // Resolve the promise with the transcription result
+        } catch (error) {
+          console.error("Error transcribing audio:", error);
+          reject(error); // Reject the promise if an error occurs during transcription
+        }
+      };
+
+      // Start recording
+      recorder.start();
+
+      // Set a timeout to stop recording after a certain duration (in milliseconds)
+      setTimeout(() => {
+        recorder.stop();
+      }, 5000); // Adjust the duration as needed (e.g., 5000 milliseconds for 5 seconds)
+
+    } catch (error) {
+      console.error('Error recording voice command:', error);
+      reject(error); // Reject the promise if an error occurs during recording
+    }
+  });
+};
+
+
+async function transcribeAudio(audioBlob) {
+  const model = "whisper-1";
+
+  const formData = new FormData();
+  formData.append("model", model);
+  formData.append("file", audioBlob, "audio.wav");
+
+  try {
+    const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+      method: 'POST',
+      headers: {
+        Authorization: "Bearer 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",
+      },
+      body: formData
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to transcribe audio');
+    }
+
+    const responseData = await response.json();
+    return responseData;
+  } catch (error) {
+    console.error("Error transcribing audio:", error);
+    throw error;
+  }
+}
 
 // NOTHING BELOW THIS LINE IS CHANGED FROM ORIGNAL D-id File Example
 //
@@ -243,15 +333,6 @@ function onVideoStatusChange(videoIsPlaying, stream) {
 }
 
 function onTrack(event) {
-  /**
-   * The following code is designed to provide information about wether currently there is data
-   * that's being streamed - It does so by periodically looking for changes in total stream data size
-   *
-   * This information in our case is used in order to show idle video while no talk is streaming.
-   * To create this idle video use the POST https://api.d-id.com/talks endpoint with a silent audio file or a text script with only ssml breaks 
-   * https://docs.aws.amazon.com/polly/latest/dg/supportedtags.html#break-tag
-   * for seamless results use `config.fluent: true` and provide the same configuration as the streaming video
-   */
 
   if (!event.track) return;
 
