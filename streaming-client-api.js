@@ -214,7 +214,7 @@ const recordVoiceCommand = () => {
       // Set a timeout to stop recording after a certain duration (in milliseconds)
       setTimeout(() => {
         recorder.stop();
-      }, 5000); // Adjust the duration as needed (e.g., 5000 milliseconds for 5 seconds)
+      }, 5000); 
 
     } catch (error) {
       console.error('Error recording voice command:', error);
