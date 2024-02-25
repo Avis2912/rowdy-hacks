@@ -66,6 +66,9 @@ const streamingStatusLabel = document.getElementById('streaming-status-label');
 
 const connectButton = document.getElementById('connect-button');
 connectButton.onclick = async () => {
+  connectButton.style.display = 'none';
+  destroyButton.style.display = 'flex';
+
   if (peerConnection && peerConnection.connectionState === 'connected') {
     return;
   }
@@ -106,12 +109,17 @@ connectButton.onclick = async () => {
 const talkButton = document.getElementById('talk-button');
 talkButton.onclick = async () => {
   if (peerConnection?.signalingState === 'stable' || peerConnection?.iceConnectionState === 'connected') {
-    //
-    // New from Jim 10/23 -- Get the user input from the text input field get ChatGPT Response
-    const userInput = document.getElementById('user-input-field').value;
-    const responseFromOpenAI = await fetchOpenAIResponse(userInput);
-    //
-    // Print the openAIResponse to the console
+    
+    // const userInput = document.getElementById('user-input-field').value;
+    try {
+
+      const recordedVoiceCommand = await recordVoiceCommand();
+      const responseFromOpenAI = await fetchOpenAIResponse(recordedVoiceCommand);
+
+    } catch (error) {
+      console.error('Error recording voice command:', error);
+    }
+
     console.log("OpenAI Response:", responseFromOpenAI);
     //
     const talkResponse = await fetch(`${DID_API.url}/talks/streams/${streamId}`, {
@@ -159,6 +167,7 @@ talkButton.onclick = async () => {
 
 const destroyButton = document.getElementById('destroy-button');
 destroyButton.onclick = async () => {
+  console.log('DESTROYED')
   await fetch(`${DID_API.url}/talks/streams/${streamId}`, {
     method: 'DELETE',
     headers: {
