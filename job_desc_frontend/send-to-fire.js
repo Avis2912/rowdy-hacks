@@ -9,29 +9,67 @@ const firebaseConfig = {
     measurementId: "G-FZRFK5VRBY"
   };
   
+// Your existing Firebase initialization remains the same
 const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore(app);
 
-// Function to handle form submission
-function submitData() {
+// New function to read and extract text from a PDF file
+function readPdf(file) {
+    // Use pdf.js library here to read the PDF
+    // This is a simplified example; refer to the pdf.js documentation for complete usage
+    const fileReader = new FileReader();
+    fileReader.onload = function() {
+        const typedarray = new Uint8Array(this.result);
+        pdfjsLib.getDocument(typedarray).promise.then(pdf => {
+            let texts = '';
+            for (let i = 1; i <= pdf.numPages; i++) {
+                pdf.getPage(i).then(page => {
+                    page.getTextContent().then(content => {
+                        // Concatenate the strings from each piece of text content
+                        const strings = content.items.map(item => item.str);
+                        texts += strings.join(' ') + '\n'; // Add a new line for each page for readability
+
+                        // Assuming you want to store text after the last page is read
+                        if (i === pdf.numPages) {
+                            storePdfText(texts); // Call function to store text in Firestore
+                        }
+                    });
+                });
+            }
+        }).catch(err => {
+            console.error('Error reading PDF: ', err);
+        });
+    };
+    fileReader.readAsArrayBuffer(file);
+}
+
+// Function to store extracted text in Firestore
+function storePdfText(texts) {
     const company = document.getElementById('company').value;
     const position = document.getElementById('position').value;
-    // Assuming you want to store company and position. Adjust according to your needs.
     db.collection('jobDescriptions').add({
         company: company,
         position: position,
-        // You can add more fields here
+        pdfText: texts, // Store the extracted text from PDF
     }).then(() => {
-        console.log("Document successfully written!");
+        console.log("Document successfully written with PDF text!");
     }).catch((error) => {
         console.error("Error writing document: ", error);
     });
 }
 
-// Event listeners for your buttons
-document.getElementById('submit').addEventListener('click', submitData);
+// Modified submitData function to handle PDF upload and extraction
+function submitData() {
+    const pdfFile = document.getElementById('pdfUpload').files[0]; // Get the uploaded PDF file
+    if (pdfFile) {
+        readPdf(pdfFile); // Read and extract text from the PDF
+    } else {
+        console.log("No PDF file selected.");
+    }
+}
 
-// If 'generate' button does something else related to Firebase, add its functionality here
+// Event listeners remain the same
+document.getElementById('submit').addEventListener('click', submitData);
 document.getElementById('generate').addEventListener('click', () => {
     // Generate something or another Firebase call
 });
